@@ -1,0 +1,4 @@
+<h1><%= @num_tweets %> Recent Tweets for <%= @user.username %></h1>
+<% @tweets.each do |tweet| %>
+<li><%= tweet.content %></li>
+<% end %>
