@@ -1,8 +1,10 @@
 class TwitterUser < ActiveRecord::Base
   has_many :tweets
 
+  MAX_STALE_TIME = 10
+
   def stale?(num)
-    @tweets = self.tweets.limit(num).order("twitter_created_at DESC")
+    @tweets = self.tweets.limit(num).order("twitter_created_at ASC")
 
     @tweet_diffs = []
 
@@ -12,7 +14,9 @@ class TwitterUser < ActiveRecord::Base
 
     @stale_time = @tweet_diffs.inject { |sum, e| sum + e }.to_f / @tweet_diffs.size
 
-    if (Time.now - self.tweets.last.twitter_created_at) > @stale_time
+    @stale_time = MAX_STALE_TIME if @stale_time > MAX_STALE_TIME
+
+    if (Time.now - @tweets.last.updated_at) > @stale_time
       return true
     end
     false
@@ -23,9 +27,16 @@ class TwitterUser < ActiveRecord::Base
   end
 
   def pull_tweets(num)
+    @tweets = []
     Twitter.user_timeline(self.username, :count => num, :result_type => "recent").each do |tweet|
-      @current_tweet = Tweet.find_or_create_by_content_and_twitter_created_at_and_twitter_user_id(:content => tweet.text, :twitter_created_at => tweet.created_at, :twitter_user_id => self.id)
-      @current_tweet.update_attributes(:updated_at => Time.now)
+      tweet = Tweet.find_or_create_by_content_and_twitter_created_at_and_twitter_user_id(
+        :content => tweet.text, 
+        :twitter_created_at => tweet.created_at, 
+        :twitter_user_id => self.id
+      )
+      tweet.update_attribute(:updated_at, Time.now)
+      @tweets << tweet
     end
+    return @tweets
   end
 end
