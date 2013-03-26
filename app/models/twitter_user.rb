@@ -4,19 +4,18 @@ class TwitterUser < ActiveRecord::Base
   MAX_STALE_TIME = 10
 
   def stale?(num)
-    @tweets = self.tweets.limit(num).order("twitter_created_at ASC")
+    tweets = self.tweets.limit(num).order("twitter_created_at ASC")
 
-    @tweet_diffs = []
-
-    @tweets.each_with_index do |tweet, i|
-      @tweet_diffs << (@tweets[i + 1].twitter_created_at - tweet.twitter_created_at) unless i == @tweets.length - 1
+    tweet_diffs = []
+    tweets.each_with_index do |tweet, i|
+      tweet_diffs << (tweets[i + 1].twitter_created_at - tweet.twitter_created_at) unless i == tweets.length - 1
     end
 
-    @stale_time = @tweet_diffs.inject { |sum, e| sum + e }.to_f / @tweet_diffs.size
+    stale_time = tweet_diffs.inject { |sum, e| sum + e }.to_f / tweet_diffs.size
 
-    @stale_time = MAX_STALE_TIME if @stale_time > MAX_STALE_TIME
+    stale_time = MAX_STALE_TIME if stale_time > MAX_STALE_TIME
 
-    if (Time.now - @tweets.last.updated_at) > @stale_time
+    if (Time.now - tweets.last.updated_at) > stale_time
       return true
     end
     false

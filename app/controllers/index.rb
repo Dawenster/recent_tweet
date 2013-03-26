@@ -2,7 +2,7 @@ get '/:username' do
   
   @tweets = Tweets.new(params[:username])
 
-  if @tweets.stale? && !request.xhr?
+  if @tweets.should_pull? && !request.xhr?
     erb :loader
   else
     erb :recent, :layout => !request.xhr?
